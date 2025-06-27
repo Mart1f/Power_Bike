@@ -13,7 +13,7 @@ typedef struct struct_message {
 
 struct_message incomingData;
 
-// Pines conectados a los relés (ajusta según tu conexión real)
+// Pines conectados a los relés
 const int relayPins[NUM_SECTIONS] = {15, 4, 16, 17, 5, 18, 19, 21};
 
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataRaw, int len) {
@@ -23,12 +23,12 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataRaw, int len) {
   Serial.print("Voltaje recibido: ");
   Serial.println(v);
 
-  // Desactivar todas las salidas
+
   for (int i = 0; i < NUM_SECTIONS; i++) {
     digitalWrite(relayPins[i], HIGH);
   }
 
-  // Activar salidas dependiendo del voltaje
+  // Activar salidas de reles
   float step = 58.5 / NUM_SECTIONS;
   int numRelaysOn = v / step;
 
@@ -46,10 +46,10 @@ void setup() {
 
   Serial.println("Modo WiFi STA activado.");
 
-  // Configurar pines de relé como salidas
+  // Configura pines de rele como salidas
   for (int i = 0; i < NUM_SECTIONS; i++) {
     pinMode(relayPins[i], OUTPUT);
-    digitalWrite(relayPins[i], HIGH);  // Iniciar apagado
+    digitalWrite(relayPins[i], HIGH);  // Inicio lógico apagado
   }
 
   Serial.println("Relés configurados.");
