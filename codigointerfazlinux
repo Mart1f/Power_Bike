@@ -1,0 +1,199 @@
+import serial
+import time
+import subprocess
+import tkinter as tk
+from tkinter import ttk
+import threading
+from queue import Queue
+
+# Configuración Bluetooth
+BLUETOOTH_MAC = '08:A6:F7:A1:E1:5E'
+RFCOMM_PORT = '/dev/rfcomm0'
+BAUDRATE = 115200
+
+class SimpleDashboard:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("PowerBike Dashboard")
+        self.root.geometry("500x400")  # Aumentado para más datos
+        
+        # Variables para mostrar datos
+        self.voltage_var = tk.StringVar(value="0.0 V")
+        self.current_var = tk.StringVar(value="0.0 A")  # Nueva variable para corriente
+        self.rpm_var = tk.StringVar(value="0 RPM")
+        self.power_var = tk.StringVar(value="0.0 W")  # Nueva variable para potencia
+        
+        # Cola para comunicación entre hilos
+        self.data_queue = Queue()
+        
+        self.setup_ui()
+        
+        # Configuración Bluetooth
+        self.serial_connected = False
+        self.ser = None
+        self.running = True
+        
+        # Iniciar hilos
+        self.bluetooth_thread = threading.Thread(target=self.connect_bluetooth, daemon=True)
+        self.bluetooth_thread.start()
+        
+        # Verificador periódico de datos
+        self.root.after(100, self.check_queue)
+
+    def setup_ui(self):
+        style = ttk.Style()
+        style.configure("TLabel", font=('Arial', 14), padding=5)
+        style.configure("TTitle.Label", font=('Arial', 16, 'bold'))
+        
+        # Marco principal
+        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Titulo
+        ttk.Label(main_frame, text="PowerBike Dashboard", style="TTitle.Label").grid(row=0, column=0, columnspan=2, pady=10)
+        
+        # Datos
+        ttk.Label(main_frame, text="Voltaje:").grid(row=1, column=0, sticky=tk.W)
+        ttk.Label(main_frame, textvariable=self.voltage_var, foreground="blue").grid(row=1, column=1, sticky=tk.W)
+        
+        ttk.Label(main_frame, text="Corriente:").grid(row=2, column=0, sticky=tk.W)
+        ttk.Label(main_frame, textvariable=self.current_var, foreground="green").grid(row=2, column=1, sticky=tk.W)
+        
+        ttk.Label(main_frame, text="RPM:").grid(row=3, column=0, sticky=tk.W)
+        ttk.Label(main_frame, textvariable=self.rpm_var, foreground="red").grid(row=3, column=1, sticky=tk.W)
+        
+        ttk.Label(main_frame, text="Potencia:").grid(row=4, column=0, sticky=tk.W)
+        ttk.Label(main_frame, textvariable=self.power_var, foreground="purple").grid(row=4, column=1, sticky=tk.W)
+        
+        # Botón de salida
+        ttk.Button(main_frame, text="Salir", command=self.shutdown).grid(row=5, column=0, columnspan=2, pady=20)
+
+    def connect_bluetooth(self):
+        while self.running:
+            try:
+                if not self.serial_connected:
+                    subprocess.run(['sudo', 'rfcomm', 'bind', RFCOMM_PORT, BLUETOOTH_MAC, '1'], check=True)
+                    self.ser = serial.Serial(
+                        port=RFCOMM_PORT,
+                        baudrate=BAUDRATE,
+                        timeout=1,
+                        parity=serial.PARITY_NONE,
+                        stopbits=serial.STOPBITS_ONE,
+                        bytesize=serial.EIGHTBITS
+                    )
+                    self.ser.flushInput()
+                    self.serial_connected = True
+                    print("Conexión Bluetooth establecida")
+                
+                self.read_data()
+                
+            except Exception as e:
+                print(f"Error de conexión: {str(e)[:100]}")
+                self.serial_connected = False
+                if self.ser:
+                    self.ser.close()
+                time.sleep(3)
+
+    def read_data(self):
+        buffer = ""
+        while self.running and self.serial_connected:
+            try:
+                # Leer todos los bytes disponibles
+                data = self.ser.read(self.ser.in_waiting or 1).decode('utf-8', errors='ignore')
+                
+                if data:
+                    buffer += data
+                    
+                    # Procesar líneas completas
+                    while '\n' in buffer:
+                        line, buffer = buffer.split('\n', 1)
+                        line = line.strip()
+                        
+                        if line:
+                            print(f"Dato recibido: [{line}]")
+                            self.process_received_data(line)
+                
+            except Exception as e:
+                print(f"Error en lectura: {str(e)[:100]}")
+                self.serial_connected = False
+                break
+
+    def process_received_data(self, raw_data):
+        try:
+            # 1. Limpieza avanzada
+            clean_data = raw_data.replace('\x00', '').strip()
+            
+            # 2. Corrección de formatos
+            if clean_data.startswith('.'):
+                clean_data = '0' + clean_data
+            clean_data = clean_data.replace(' ', '')
+            
+            # 3. División y validación
+            parts = clean_data.split(',')
+            if len(parts) != 3:
+                print(f"Formato incorrecto: {raw_data} (Se esperaban 3 valores)")
+                return
+            
+            # 4. Extracción de valores
+            voltaje = float(parts[0])
+            corriente = float(parts[1])
+            rpm = float(parts[2])
+            
+            # 5. Validación física
+            if not (0 <= abs(voltaje) <= 100):
+                print(f"Voltaje inválido: {voltaje}V")
+                return
+                
+            if not (-50 <= corriente <= 50):
+                print(f"Corriente inválida: {corriente}A")
+                return
+                
+            if not (0 <= rpm <= 3000):
+                print(f"RPM inválidos: {rpm}")
+                return
+            
+            # 6. Cálculo de potencia (P = V*I)
+            potencia = abs(voltaje * corriente)
+            
+            # 7. Encolar datos para la UI
+            self.data_queue.put(('data', voltaje, corriente, rpm, potencia))
+            
+            # Debug
+            print(f"Procesado: V={voltaje:.2f}V, I={corriente:.2f}A, RPM={rpm:.0f}, P={potencia:.2f}W")
+            
+        except ValueError as e:
+            print(f"Error numérico: {e} en datos: {raw_data}")
+        except Exception as e:
+            print(f"Error inesperado: {e}")
+
+    def check_queue(self):
+        try:
+            while not self.data_queue.empty():
+                item = self.data_queue.get_nowait()
+                if item[0] == 'data':
+                    _, voltaje, corriente, rpm, potencia = item
+                    self.update_dashboard(voltaje, corriente, rpm, potencia)
+        except:
+            pass
+        
+        self.root.after(100, self.check_queue)
+
+    def update_dashboard(self, voltaje, corriente, rpm, potencia):
+        # Actualizar UI con todos los valores
+        self.voltage_var.set(f"{abs(voltaje):.1f} V")
+        self.current_var.set(f"{corriente:.2f} A")
+        self.rpm_var.set(f"{rpm:.0f} RPM")
+        self.power_var.set(f"{potencia:.1f} W")
+
+    def shutdown(self):
+        self.running = False
+        if self.ser and self.ser.is_open:
+            self.ser.close()
+        subprocess.run(['sudo', 'rfcomm', 'release', RFCOMM_PORT], check=False)
+        self.root.destroy()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    dashboard = SimpleDashboard(root)
+    root.protocol("WM_DELETE_WINDOW", dashboard.shutdown)
+    root.mainloop()
