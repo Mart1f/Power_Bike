@@ -1,14 +1,89 @@
-This repository contains the complete source code for an energy-generating bicycle system designed to measure, transmit, and display electrical parameters such as RPM, 
-voltage, current, and power generated in real time. The project combines a Raspberry Pi 4, two ESP32 microcontrollers, a dynamo, and high-voltage LED strips controlled by relays.
+# 🚴‍♂️ Power Bike – Energy-Generating Bicycle System
 
-As the user pedals, the dynamo produces electricity. A dedicated ESP32 reads the raw data from connected sensors, scales the values, and sends the processed data via Bluetooth to 
-a Raspberry Pi 4. It also broadcasts the power data over Wi-Fi using the MAC address protocol to a second ESP32 module.
+This repository contains the complete source code and system description for an **interactive energy-generating bicycle** that monitors, transmits, and visualizes real-time electrical parameters such as **RPM, voltage, current, and power output**.
 
-The Raspberry Pi 4 receives the sensor data via Bluetooth and displays all information on a connected screen. Users can view live metrics including RPM, voltage, current, 
-and total power output. This allows for continuous and intuitive feedback on energy generation performance.
+---
 
-The second ESP32 receives the broadcasted data and uses it to control a series of 120V LED strips through relays. As the cyclist pedals harder and generates more power, more LED 
-strips light up, providing a visual representation of the pedaling effort and energy output.
+## 🔧 System Overview
 
-This system provides an engaging and educational experience, promoting awareness about energy consumption and production. It also showcases real-time wireless communication between 
-embedded systems and the integration of visual feedback for user interaction.
+The project integrates multiple hardware components, including:
+
+- 🧠 **Raspberry Pi 4** – acts as the main display unit
+- 📡 **Two ESP32 microcontrollers** – for sensor reading and control logic
+- ⚙️ **Dynamo** – generates electricity as the user pedals
+- 💡 **120V LED strips** – visually indicate energy production via relays
+
+---
+
+## 🔁 How It Works
+
+1. As the user **pedals**, the **dynamo** generates electricity.
+2. A dedicated **ESP32**:
+   - Reads raw sensor data (RPM, voltage, current).
+   - Scales and processes the values.
+   - Sends the data via **Bluetooth** to the **Raspberry Pi 4**.
+   - Simultaneously **broadcasts** the power data over **Wi-Fi** (MAC-based protocol) to a second ESP32.
+3. The **Raspberry Pi 4**:
+   - Receives the data via Bluetooth.
+   - Displays real-time metrics on a connected screen using a **Python GUI (Tkinter)** dashboard.
+4. The **second ESP32**:
+   - Receives power data over Wi-Fi.
+   - Controls **relay modules** to turn on/off high-voltage **LED strips**.
+   - The number of LEDs turned on increases with the pedaling effort and power output.
+
+---
+
+## 📊 Features
+
+- Real-time data visualization:
+  - 🔵 **Voltage**
+  - 🟢 **Current**
+  - 🔁 **RPM**
+  - 🔌 **Power (W)**
+- Bluetooth communication for dashboard data
+- Wi-Fi-based broadcast to auxiliary control system
+- LED feedback system representing physical effort
+- Modular and scalable architecture
+- Educational and interactive energy awareness system
+
+---
+
+## 📸 Screenshots
+
+![WhatsApp Image 2025-07-02 at 12 19 26 PM (1)](https://github.com/user-attachments/assets/1e5ae4fc-ae23-4544-899d-012a0a7748b5)
+
+
+---
+
+## 📦 Requirements
+
+- Python 3.x
+- `tkinter` for GUI (pre-installed on Raspberry Pi OS)
+- Serial libraries for ESP32 code (e.g., Arduino framework)
+- Bluetooth configuration (for Raspberry Pi)
+- Relay modules compatible with 120V LED strips
+
+---
+
+## 👨‍💻 Author
+
+**Martín Felipe Bermúdez Romero**  
+Student of Electronic Engineering  
+Universidad Distrital Francisco José de Caldas  
+martimrome13@gmail.com*
+mfbermudezr@udistrital.edu.co*
+
+---
+
+
+## 🚀 Future Improvements (optional)
+
+- Data logging to CSV or database
+- Web dashboard for remote monitoring
+- Energy storage monitoring (e.g., batteries or capacitors)
+- Support for multiple bikes or users
+
+---
+
+
+
