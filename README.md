@@ -53,6 +53,13 @@ The project integrates multiple hardware components, including:
 ![WhatsApp Image 2025-07-02 at 12 19 26 PM (1)](https://github.com/user-attachments/assets/1e5ae4fc-ae23-4544-899d-012a0a7748b5)
 
 
+<img width="856" height="695" alt="image" src="https://github.com/user-attachments/assets/d9a7dc72-e22f-4a3f-837d-f8739902d1d6" />
+
+<img width="1786" height="638" alt="image" src="https://github.com/user-attachments/assets/80674943-8d6f-4611-9b80-f40fd01c462e" />
+
+
+
+
 ---
 
 ## 📦 Requirements
